@@ -175,7 +175,7 @@ class FirstPage(Screen):
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
 
-            filename = f"temp_qr_{random.randint(0, 999999)}.png"
+            filename = f"temp_qr_{random.randint(0, 999)}.png"
             img.save(filename)
             qr_image = self.ids.qr_image
             qr_image.source = filename
@@ -194,10 +194,6 @@ class SecondPage(Screen):
             box_size=5,
             border=4,
         )
-
-    def select_file(self):
-        from plyer import filechooser
-        filechooser.open_file(on_selection=self.selected)
 
 
 class Manager(ScreenManager):
