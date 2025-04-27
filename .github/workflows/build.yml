@@ -1,38 +1,41 @@
-name: Build APK
-
+name: CI
 on:
   push:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
 
-      - name: Install system dependencies
+      #used to cache dependencies with a timeout
+      - name: Get Date
+        id: get-date
         run: |
-          sudo apt update
-          sudo apt install -y libtinfo6 zlib1g-dev git unzip python3-pip
-          # Создаём симлинк для совместимости (если нужно)
-          sudo ln -s /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+        shell: bash
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v2
         with:
-          python-version: "3.8"
+          path: .buildozer_global
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }} # Replace with your path
 
-      - name: Debug info (проверка окружения)
-        run: |
-          python3 --version
-          pip3 --version
-          which buildozer
-
-      - name: Build APK
-        uses: digreatbrian/buildozer-action@v2
+      - uses: actions/cache@v2
         with:
-          python-version: 3.8
-          buildozer-cmd: buildozer -v android debug
+          path: .buildozer
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-      - name: Upload APK artifact
-       
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: package
+          path: ${{ steps.buildozer.outputs.filename }}
